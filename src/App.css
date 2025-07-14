@@ -1,0 +1,84 @@
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.signature-canvas {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: white;
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #0033A0 0%, #FFD100 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+}
+
+.MuiContainer-root {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+/* Responsive adjustments */
+@media (max-width: 900px) {
+  #root {
+    padding: 0.5rem;
+  }
+  .MuiContainer-root {
+    min-width: 100vw;
+    padding: 0;
+  }
+  .MuiPaper-root {
+    padding: 1rem !important;
+  }
+}
+
+@media (max-width: 600px) {
+  #root {
+    padding: 0.25rem;
+  }
+  .MuiContainer-root {
+    min-width: 100vw;
+    padding: 0;
+  }
+  .MuiPaper-root {
+    padding: 0.5rem !important;
+  }
+  .signature-canvas {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 120px !important;
+  }
+  img[alt="Sigma Chi Logo"] {
+    width: 70px !important;
+    margin-bottom: 10px !important;
+  }
+  h1, .MuiTypography-h3 {
+    font-size: 2rem !important;
+  }
+  .MuiTypography-h5 {
+    font-size: 1.1rem !important;
+  }
+  .MuiTypography-h6 {
+    font-size: 1rem !important;
+  }
+  .MuiButton-root {
+    font-size: 0.95rem !important;
+    min-width: 120px;
+    padding: 0.5em 1em;
+  }
+  .MuiTextField-root {
+    font-size: 1rem !important;
+  }
+  .MuiAutocomplete-root {
+    min-width: 0 !important;
+  }
+}

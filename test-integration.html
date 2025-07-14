@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sigma Chi Form - Integration Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #0033A0;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #0033A0;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #002070;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .loading {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 style="color: #0033A0;">Sigma Chi Form - Integration Test</h1>
+        <p>Use this page to test your Google Apps Script integration before using the React app.</p>
+        
+        <div class="form-group">
+            <label for="scriptUrl">Google Apps Script URL:</label>
+            <input type="url" id="scriptUrl" placeholder="https://script.google.com/macros/s/.../exec" />
+        </div>
+        
+        <div class="form-group">
+            <label for="submitterName">Submitter Name:</label>
+            <input type="text" id="submitterName" value="Test User" />
+        </div>
+        
+        <div class="form-group">
+            <label for="nominations">Nominations (JSON format):</label>
+            <textarea id="nominations" rows="6">{
+  "Consul": [{"id": 1, "name": "John Doe"}],
+  "Pro-Consul": [{"id": 2, "name": "Jane Smith"}]
+}</textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="signature">Signature (base64):</label>
+            <input type="text" id="signature" value="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==" />
+        </div>
+        
+        <button onclick="testConnection()">Test Connection (GET)</button>
+        <button onclick="testSubmission()">Test Submission (POST)</button>
+        <button onclick="clearResult()">Clear Result</button>
+        
+        <div id="result" class="result" style="display: none;"></div>
+    </div>
+
+    <script>
+        function showResult(content, type = 'success') {
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = content;
+            resultDiv.className = `result ${type}`;
+            resultDiv.style.display = 'block';
+        }
+
+        function clearResult() {
+            document.getElementById('result').style.display = 'none';
+        }
+
+        async function testConnection() {
+            const scriptUrl = document.getElementById('scriptUrl').value;
+            if (!scriptUrl) {
+                showResult('Please enter a Google Apps Script URL', 'error');
+                return;
+            }
+
+            showResult('Testing connection...', 'loading');
+
+            try {
+                const response = await fetch(scriptUrl, {
+                    method: 'GET',
+                    mode: 'cors'
+                });
+                
+                const data = await response.text();
+                showResult(`Connection successful!\nStatus: ${response.status}\nResponse: ${data}`, 'success');
+            } catch (error) {
+                showResult(`Connection failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testSubmission() {
+            const scriptUrl = document.getElementById('scriptUrl').value;
+            const submitterName = document.getElementById('submitterName').value;
+            const nominationsText = document.getElementById('nominations').value;
+            const signature = document.getElementById('signature').value;
+
+            if (!scriptUrl) {
+                showResult('Please enter a Google Apps Script URL', 'error');
+                return;
+            }
+
+            showResult('Testing submission...', 'loading');
+
+            try {
+                const formData = {
+                    submitterName,
+                    nominations: JSON.parse(nominationsText),
+                    signature,
+                    submittedAt: new Date().toISOString()
+                };
+
+                const response = await fetch(scriptUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData),
+                    mode: 'cors'
+                });
+                
+                const data = await response.text();
+                showResult(`Submission ${response.ok ? 'successful' : 'failed'}!\nStatus: ${response.status}\nResponse: ${data}`, response.ok ? 'success' : 'error');
+            } catch (error) {
+                showResult(`Submission failed: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html> 
