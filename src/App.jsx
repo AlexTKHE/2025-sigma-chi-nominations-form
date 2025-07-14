@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Container,
   Paper,
@@ -105,13 +105,14 @@ const officerPositions = [
 
 function App() {
   const [nominations, setNominations] = useState({});
-  const [signaturePad, setSignaturePad] = useState(null);
+  const signaturePad = useRef(null);
   const [submittedData, setSubmittedData] = useState(null);
   const [showThankYou, setShowThankYou] = useState(false);
   const [expanded, setExpanded] = useState(null); // Track which accordion is expanded
   const [submitterName, setSubmitterName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [hasValidSignature, setHasValidSignature] = useState(false);
 
   const handleAddNomination = (position) => {
     setNominations(prev => ({
@@ -141,7 +142,7 @@ function App() {
     setSubmitError('');
     
     try {
-      const signatureData = signaturePad ? signaturePad.toDataURL() : null;
+      const signatureData = signaturePad.current ? signaturePad.current.toDataURL() : null;
       const formData = {
         submitterName,
         nominations: Object.keys(nominations).reduce((acc, position) => {
@@ -184,8 +185,9 @@ function App() {
   };
 
   const handleClearSignature = () => {
-    if (signaturePad) {
-      signaturePad.clear();
+    if (signaturePad.current) {
+      signaturePad.current.clear();
+      setHasValidSignature(false);
     }
   };
 
@@ -197,7 +199,24 @@ function App() {
 
   // Helper to check if signature is present
   const hasSignature = () => {
-    return signaturePad && !signaturePad.isEmpty();
+    return hasValidSignature;
+  };
+
+  // Function to check signature validity
+  const checkSignature = () => {
+    if (!signaturePad.current) {
+      setHasValidSignature(false);
+      return;
+    }
+    
+    try {
+      const dataURL = signaturePad.current.toDataURL();
+      const isValid = dataURL.length > 100; // Threshold for detecting actual signature data
+      setHasValidSignature(isValid);
+    } catch (error) {
+      console.error('Error checking signature:', error);
+      setHasValidSignature(false);
+    }
   };
 
   // When a section is expanded, add a nomination if none exist
@@ -210,6 +229,15 @@ function App() {
       }));
     }
   };
+
+  // Check signature periodically to update state
+  useEffect(() => {
+    const interval = setInterval(() => {
+      checkSignature();
+    }, 1000); // Check every second
+
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <ThemeProvider theme={sigmaChiTheme}>
@@ -360,12 +388,14 @@ function App() {
                 backgroundColor: '#fff'
               }}>
                 <SignatureCanvas
-                  ref={(ref) => setSignaturePad(ref)}
+                  ref={signaturePad}
                   canvasProps={{
                     width: 500,
                     height: 200,
                     className: 'signature-canvas'
                   }}
+                  onEnd={checkSignature}
+                  onBegin={checkSignature}
                 />
               </Box>
               <Button
@@ -396,6 +426,7 @@ function App() {
                 <strong>and</strong> provide your signature below.
               </Typography>
             </Box>
+
 
             {/* Submit Button */}
             <Button
