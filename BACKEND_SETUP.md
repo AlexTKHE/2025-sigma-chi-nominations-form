@@ -34,7 +34,7 @@ The server will run on `http://localhost:3001`
 In `src/config.js`, update the production API URL:
 ```javascript
 apiUrl: process.env.NODE_ENV === 'production' 
-  ? 'https://your-backend-url.vercel.app' // Replace with your actual backend URL
+  ? 'https://2025-sigma-chi-nominations-form.vercel.app' // Replace with your actual backend URL
   : 'http://localhost:3001',
 ```
 
