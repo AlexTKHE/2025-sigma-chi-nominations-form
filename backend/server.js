@@ -53,13 +53,18 @@ async function saveNominations(data) {
       return;
     }
 
+    console.log('Attempting to save nominations to GitHub Gist...');
+    
     const response = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
       method: 'PATCH',
       headers: {
         'Authorization': `token ${GITHUB_TOKEN}`,
         'Content-Type': 'application/json',
+        'Accept': 'application/vnd.github.v3+json',
+        'User-Agent': 'Sigma-Chi-Nominations-App'
       },
       body: JSON.stringify({
+        description: `Updated at ${new Date().toISOString()}`,
         files: {
           'nominations.json': {
             content: JSON.stringify(data, null, 2)
@@ -68,13 +73,20 @@ async function saveNominations(data) {
       })
     });
 
+    const responseText = await response.text();
+    console.log('GitHub API response status:', response.status);
+    console.log('GitHub API response:', responseText);
+
     if (response.ok) {
-      console.log('Nominations saved to GitHub Gist');
+      console.log('✅ Nominations saved to GitHub Gist successfully');
+      return true;
     } else {
-      console.error('Failed to save to GitHub Gist:', response.status);
+      console.error('❌ Failed to save to GitHub Gist:', response.status, responseText);
+      return false;
     }
   } catch (error) {
-    console.error('Error saving nominations:', error);
+    console.error('❌ Error saving nominations:', error);
+    return false;
   }
 }
 
@@ -141,15 +153,24 @@ app.post('/api/submit-nominations', async (req, res) => {
     existingData.summary = summary;
     
     // Save data
-    await saveNominations(existingData);
+    const saveResult = await saveNominations(existingData);
     
-    console.log('Submission successful:', submission.id);
-    
-    res.json({ 
-      success: true, 
-      message: 'Nominations submitted successfully',
-      submissionId: submission.id
-    });
+    if (saveResult) {
+      console.log('✅ Submission successful:', submission.id);
+      res.json({ 
+        success: true, 
+        message: 'Nominations submitted successfully',
+        submissionId: submission.id
+      });
+    } else {
+      console.log('⚠️ Submission saved locally but failed to save to GitHub');
+      res.json({ 
+        success: true, 
+        message: 'Nominations submitted successfully (local storage only)',
+        submissionId: submission.id,
+        warning: 'Data not saved to GitHub Gist'
+      });
+    }
     
   } catch (error) {
     console.error('Error processing submission:', error);
