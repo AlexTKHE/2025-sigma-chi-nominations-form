@@ -17,31 +17,18 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '10mb' })); // For signature data
 
-// Data storage
-const DATA_FILE = path.join(__dirname, 'data', 'nominations.json');
+// Data storage - use in-memory storage for Vercel serverless
+let nominationsData = { nominations: [], summary: {} };
 
-// Ensure data directory exists
-async function ensureDataDir() {
-  try {
-    await fs.mkdir(path.dirname(DATA_FILE), { recursive: true });
-  } catch (error) {
-    console.log('Data directory already exists');
-  }
+// Load existing nominations (in-memory)
+function loadNominations() {
+  return nominationsData;
 }
 
-// Load existing nominations
-async function loadNominations() {
-  try {
-    const data = await fs.readFile(DATA_FILE, 'utf8');
-    return JSON.parse(data);
-  } catch (error) {
-    return { nominations: [], summary: {} };
-  }
-}
-
-// Save nominations
-async function saveNominations(data) {
-  await fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2));
+// Save nominations (in-memory)
+function saveNominations(data) {
+  nominationsData = data;
+  console.log('Nominations saved:', data);
 }
 
 // Routes
@@ -69,13 +56,13 @@ app.get('/api/health', (req, res) => {
 
 app.post('/api/submit-nominations', async (req, res) => {
   try {
-    await ensureDataDir();
-    
     const formData = req.body;
     const timestamp = new Date().toISOString();
     
+    console.log('Received form data:', formData);
+    
     // Load existing data
-    const existingData = await loadNominations();
+    const existingData = loadNominations();
     
     // Add new submission
     const submission = {
@@ -107,7 +94,9 @@ app.post('/api/submit-nominations', async (req, res) => {
     existingData.summary = summary;
     
     // Save data
-    await saveNominations(existingData);
+    saveNominations(existingData);
+    
+    console.log('Submission successful:', submission.id);
     
     res.json({ 
       success: true, 
@@ -127,7 +116,7 @@ app.post('/api/submit-nominations', async (req, res) => {
 
 app.get('/api/nominations', async (req, res) => {
   try {
-    const data = await loadNominations();
+    const data = loadNominations();
     res.json(data);
   } catch (error) {
     console.error('Error loading nominations:', error);
@@ -140,7 +129,7 @@ app.get('/api/nominations', async (req, res) => {
 
 app.get('/api/summary', async (req, res) => {
   try {
-    const data = await loadNominations();
+    const data = loadNominations();
     res.json({ summary: data.summary });
   } catch (error) {
     console.error('Error loading summary:', error);
