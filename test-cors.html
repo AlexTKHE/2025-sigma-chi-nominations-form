@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CORS Test - Sigma Chi Nomination Form</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background: #0033A0;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #002080;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .method-selector {
+            margin: 10px 0;
+        }
+        .method-selector label {
+            margin-right: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 CORS Test - Sigma Chi Nomination Form</h1>
+        <p>This page helps debug CORS issues with your Google Apps Script endpoint.</p>
+
+        <div class="test-section">
+            <h3>1. Test GET Request (Should work)</h3>
+            <input type="text" id="scriptUrl" placeholder="Enter your Google Apps Script URL" 
+                   value="https://script.google.com/macros/s/AKfycbz7Zodsg3QSJa7FJ8rSlrLoLoWVHyhpo1VtuVauhTJW3HCv7EUn5muTakBmrlMkl/exec">
+            <br>
+            <button onclick="testGet()">Test GET Request</button>
+            <div id="getResult" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>2. Test POST Request (Multiple Methods)</h3>
+            <div class="method-selector">
+                <label><input type="radio" name="postMethod" value="direct" checked> Direct POST (likely to fail)</label>
+                <label><input type="radio" name="postMethod" value="proxy"> CORS Proxy</label>
+                <label><input type="radio" name="postMethod" value="jsonp"> JSONP Workaround</label>
+            </div>
+            <button onclick="testPost()">Test POST Request</button>
+            <div id="postResult" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>3. Test with Fetch API (Same as your React app)</h3>
+            <button onclick="testFetch()">Test Fetch API</button>
+            <div id="fetchResult" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>4. Manual CORS Test</h3>
+            <button onclick="testCors()">Test CORS Headers</button>
+            <div id="corsResult" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>5. Working Solution for React App</h3>
+            <button onclick="showWorkingSolution()">Show Working Code</button>
+            <div id="solutionResult" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        function getScriptUrl() {
+            return document.getElementById('scriptUrl').value.trim();
+        }
+
+        function showResult(elementId, content, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.textContent = content;
+            element.className = `result ${type}`;
+        }
+
+        function getSelectedMethod() {
+            return document.querySelector('input[name="postMethod"]:checked').value;
+        }
+
+        async function testGet() {
+            const url = getScriptUrl();
+            showResult('getResult', 'Testing GET request...', 'info');
+            
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    mode: 'cors'
+                });
+                
+                const text = await response.text();
+                showResult('getResult', 
+                    `✅ GET Request Successful!\nStatus: ${response.status}\nHeaders: ${JSON.stringify(Object.fromEntries(response.headers.entries()), null, 2)}\nResponse: ${text}`, 
+                    'success');
+            } catch (error) {
+                showResult('getResult', 
+                    `❌ GET Request Failed:\n${error.message}`, 
+                    'error');
+            }
+        }
+
+        async function testPost() {
+            const url = getScriptUrl();
+            const method = getSelectedMethod();
+            showResult('postResult', `Testing POST request using ${method} method...`, 'info');
+            
+            const testData = {
+                submitterName: 'Test User',
+                nominations: {
+                    'Risk-Manager': [{ name: 'Test Nominee' }]
+                },
+                signature: 'data:image/png;base64,test',
+                submittedAt: new Date().toISOString()
+            };
+
+            try {
+                let response;
+                
+                if (method === 'direct') {
+                    // Direct POST - will likely fail due to CORS
+                    response = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        mode: 'cors',
+                        body: JSON.stringify(testData)
+                    });
+                } else if (method === 'proxy') {
+                    // Use CORS proxy
+                    const proxyUrl = `https://cors-anywhere.herokuapp.com/${url}`;
+                    response = await fetch(proxyUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Origin': window.location.origin
+                        },
+                        body: JSON.stringify(testData)
+                    });
+                } else if (method === 'jsonp') {
+                    // JSONP workaround (not ideal for POST, but shows the concept)
+                    showResult('postResult', 
+                        'JSONP is not suitable for POST requests. Use the proxy method instead.', 
+                        'error');
+                    return;
+                }
+                
+                const text = await response.text();
+                showResult('postResult', 
+                    `✅ POST Request Successful!\nStatus: ${response.status}\nMethod: ${method}\nResponse: ${text}`, 
+                    'success');
+            } catch (error) {
+                showResult('postResult', 
+                    `❌ POST Request Failed:\nMethod: ${method}\nError: ${error.message}\n\nThis confirms the CORS issue.`, 
+                    'error');
+            }
+        }
+
+        async function testFetch() {
+            const url = getScriptUrl();
+            showResult('fetchResult', 'Testing Fetch API (same as your React app)...', 'info');
+            
+            const testData = {
+                submitterName: 'Test User',
+                nominations: {
+                    'Risk-Manager': [{ name: 'Test Nominee' }]
+                },
+                signature: 'data:image/png;base64,test',
+                submittedAt: new Date().toISOString()
+            };
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(testData)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                showResult('fetchResult', 
+                    `✅ Fetch API Test Successful!\nStatus: ${response.status}\nResponse: ${JSON.stringify(result, null, 2)}`, 
+                    'success');
+            } catch (error) {
+                showResult('fetchResult', 
+                    `❌ Fetch API Test Failed:\n${error.message}\n\nThis is the same error your React app is experiencing.`, 
+                    'error');
+            }
+        }
+
+        async function testCors() {
+            const url = getScriptUrl();
+            showResult('corsResult', 'Testing CORS headers...', 'info');
+            
+            try {
+                // Test OPTIONS request (preflight)
+                const optionsResponse = await fetch(url, {
+                    method: 'OPTIONS',
+                    mode: 'cors'
+                });
+                
+                const headers = Object.fromEntries(optionsResponse.headers.entries());
+                showResult('corsResult', 
+                    `✅ OPTIONS Request Response:\nStatus: ${optionsResponse.status}\nHeaders: ${JSON.stringify(headers, null, 2)}`, 
+                    'success');
+            } catch (error) {
+                showResult('corsResult', 
+                    `❌ OPTIONS Request Failed:\n${error.message}\n\nThis confirms the CORS preflight issue.`, 
+                    'error');
+            }
+        }
+
+        function showWorkingSolution() {
+            const solution = `// WORKING SOLUTION FOR REACT APP
+
+// Method 1: Use a CORS Proxy
+const submitNomination = async (formData) => {
+  const scriptUrl = 'YOUR_GOOGLE_APPS_SCRIPT_URL';
+  const proxyUrl = \`https://cors-anywhere.herokuapp.com/\${scriptUrl}\`;
+  
+  try {
+    const response = await fetch(proxyUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Origin': window.location.origin
+      },
+      body: JSON.stringify(formData)
+    });
+    
+    if (!response.ok) {
+      throw new Error(\`HTTP \${response.status}: \${response.statusText}\`);
+    }
+    
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error('Submission failed:', error);
+    throw error;
+  }
+};
+
+// Method 2: Use Google Apps Script as a Web App (recommended)
+// Deploy your script as a web app and use this URL format:
+// https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec
+
+// Method 3: Use Google Forms as an alternative
+// Create a Google Form and use the form response URL
+
+// Method 4: Use a backend proxy server
+// Set up a simple Node.js/Express server to proxy requests
+
+// RECOMMENDED APPROACH:
+// 1. Deploy your Google Apps Script as a web app
+// 2. Use the CORS proxy for development
+// 3. Set up a proper backend proxy for production`;
+            
+            showResult('solutionResult', solution, 'info');
+        }
+    </script>
+</body>
+</html> 

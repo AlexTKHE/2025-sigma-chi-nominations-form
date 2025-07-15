@@ -161,11 +161,15 @@ function App() {
         throw new Error('Google Apps Script URL not configured');
       }
 
-      // Send data to Google Apps Script
-      const response = await fetch(getGoogleAppsScriptUrl(), {
+      // Send data to Google Apps Script using CORS proxy
+      const scriptUrl = getGoogleAppsScriptUrl();
+      const proxyUrl = `https://cors-anywhere.herokuapp.com/${scriptUrl}`;
+      
+      const response = await fetch(proxyUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Origin': window.location.origin
         },
         body: JSON.stringify(formData)
       });
