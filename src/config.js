@@ -2,9 +2,11 @@
 // Replace these values with your actual URLs and settings
 
 export const config = {
-  // Google Apps Script Web App URL
-  // Replace this with your actual Google Apps Script URL after deployment
-  googleAppsScriptUrl: 'https://script.google.com/macros/s/AKfycbz7Zodsg3QSJa7FJ8rSIrLoLoWVHyhpo1VtuVauhTJw3HCv7EUn5muTakBmrLMklsDbng/exec',
+  // Backend API URL
+  // Use localhost for development, your deployed backend URL for production
+  apiUrl: process.env.NODE_ENV === 'production' 
+    ? 'https://your-backend-url.vercel.app' // Replace with your actual backend URL
+    : 'http://localhost:3001',
   
   // Form settings
   formSettings: {
@@ -32,17 +34,15 @@ export const config = {
   },
 };
 
-// Helper function to get the Google Apps Script URL
-export const getGoogleAppsScriptUrl = () => {
-  // In production, you might want to use environment variables
-  // For now, we'll use the config value
-  return config.googleAppsScriptUrl;
+// Helper function to get the API URL
+export const getApiUrl = () => {
+  return config.apiUrl;
 };
 
 // Helper function to validate the configuration
 export const validateConfig = () => {
-  if (config.googleAppsScriptUrl === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
-    console.warn('⚠️  Please update the Google Apps Script URL in src/config.js');
+  if (!config.apiUrl) {
+    console.warn('⚠️  Please update the API URL in src/config.js');
     return false;
   }
   return true;

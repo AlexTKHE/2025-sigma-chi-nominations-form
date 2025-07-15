@@ -21,7 +21,7 @@ import {
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SignatureCanvas from 'react-signature-canvas';
 import sigmaChiLogo from './assets/sigmaChiLogo.png';
-import { getGoogleAppsScriptUrl, validateConfig } from './config';
+import { getApiUrl, validateConfig } from './config';
 import './App.css';
 
 // Sigma Chi color theme
@@ -161,17 +161,13 @@ function App() {
         throw new Error('Google Apps Script URL not configured');
       }
 
-      // Send data to Google Apps Script using a reliable CORS proxy
-      const scriptUrl = getGoogleAppsScriptUrl();
+      // Send data to our backend API
+      const apiUrl = getApiUrl();
       
-      // Use a more reliable CORS proxy that works with POST requests
-      const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(scriptUrl)}`;
-      
-      const response = await fetch(proxyUrl, {
+      const response = await fetch(`${apiUrl}/api/submit-nominations`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Origin': window.location.origin
         },
         body: JSON.stringify(formData)
       });
