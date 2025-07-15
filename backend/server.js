@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const fs = require('fs').promises;
 const path = require('path');
+const https = require('https');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -17,18 +18,64 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '10mb' })); // For signature data
 
-// Data storage - use in-memory storage for Vercel serverless
-let nominationsData = { nominations: [], summary: {} };
+// Data storage - use GitHub Gist for persistent storage
+const GIST_ID = '7179092327efd238122283947da274ea'; // Your Gist ID
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN; // Set this in Vercel environment variables
 
-// Load existing nominations (in-memory)
-function loadNominations() {
-  return nominationsData;
+// Load nominations from GitHub Gist
+async function loadNominations() {
+  try {
+    if (!GITHUB_TOKEN) {
+      console.log('No GitHub token, using in-memory storage');
+      return { nominations: [], summary: {} };
+    }
+
+    const response = await fetch(`https://api.github.com/gists/${GIST_ID}`);
+    const gist = await response.json();
+    
+    if (gist.files && gist.files['nominations.json']) {
+      const content = gist.files['nominations.json'].content;
+      return JSON.parse(content);
+    }
+    
+    return { nominations: [], summary: {} };
+  } catch (error) {
+    console.error('Error loading nominations:', error);
+    return { nominations: [], summary: {} };
+  }
 }
 
-// Save nominations (in-memory)
-function saveNominations(data) {
-  nominationsData = data;
-  console.log('Nominations saved:', data);
+// Save nominations to GitHub Gist
+async function saveNominations(data) {
+  try {
+    if (!GITHUB_TOKEN) {
+      console.log('No GitHub token, using in-memory storage');
+      return;
+    }
+
+    const response = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `token ${GITHUB_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        files: {
+          'nominations.json': {
+            content: JSON.stringify(data, null, 2)
+          }
+        }
+      })
+    });
+
+    if (response.ok) {
+      console.log('Nominations saved to GitHub Gist');
+    } else {
+      console.error('Failed to save to GitHub Gist:', response.status);
+    }
+  } catch (error) {
+    console.error('Error saving nominations:', error);
+  }
 }
 
 // Routes
@@ -62,7 +109,7 @@ app.post('/api/submit-nominations', async (req, res) => {
     console.log('Received form data:', formData);
     
     // Load existing data
-    const existingData = loadNominations();
+    const existingData = await loadNominations();
     
     // Add new submission
     const submission = {
@@ -94,7 +141,7 @@ app.post('/api/submit-nominations', async (req, res) => {
     existingData.summary = summary;
     
     // Save data
-    saveNominations(existingData);
+    await saveNominations(existingData);
     
     console.log('Submission successful:', submission.id);
     
@@ -116,7 +163,7 @@ app.post('/api/submit-nominations', async (req, res) => {
 
 app.get('/api/nominations', async (req, res) => {
   try {
-    const data = loadNominations();
+    const data = await loadNominations();
     res.json(data);
   } catch (error) {
     console.error('Error loading nominations:', error);
@@ -129,7 +176,7 @@ app.get('/api/nominations', async (req, res) => {
 
 app.get('/api/summary', async (req, res) => {
   try {
-    const data = loadNominations();
+    const data = await loadNominations();
     res.json({ summary: data.summary });
   } catch (error) {
     console.error('Error loading summary:', error);
