@@ -187,6 +187,37 @@ app.get('/api/summary', async (req, res) => {
   }
 });
 
+// Test endpoint to check GitHub token
+app.get('/api/test-github', async (req, res) => {
+  try {
+    if (!GITHUB_TOKEN) {
+      return res.json({ 
+        success: false, 
+        message: 'No GitHub token found',
+        hasToken: false
+      });
+    }
+
+    const response = await fetch(`https://api.github.com/gists/${GIST_ID}`);
+    const gist = await response.json();
+    
+    res.json({ 
+      success: true, 
+      message: 'GitHub token is working',
+      hasToken: true,
+      gistExists: !!gist.id,
+      gistUrl: gist.html_url
+    });
+  } catch (error) {
+    res.json({ 
+      success: false, 
+      message: 'GitHub token test failed',
+      error: error.message,
+      hasToken: !!GITHUB_TOKEN
+    });
+  }
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
