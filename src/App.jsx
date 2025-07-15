@@ -161,18 +161,42 @@ function App() {
         throw new Error('Google Apps Script URL not configured');
       }
 
-      // Send data to Google Apps Script using CORS proxy
+      // Send data to Google Apps Script
       const scriptUrl = getGoogleAppsScriptUrl();
-      const proxyUrl = `https://cors-anywhere.herokuapp.com/${scriptUrl}`;
       
-      const response = await fetch(proxyUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Origin': window.location.origin
-        },
-        body: JSON.stringify(formData)
-      });
+      // For production, we need a more reliable solution
+      // Option 1: Try direct request first (might work if CORS is properly configured)
+      let response;
+      let error;
+      
+      try {
+        response = await fetch(scriptUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(formData)
+        });
+      } catch (directError) {
+        error = directError;
+        console.warn('Direct request failed, trying alternative approach:', directError);
+        
+        // Option 2: Use a more reliable CORS proxy
+        try {
+          const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(scriptUrl)}`;
+          response = await fetch(proxyUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Origin': window.location.origin
+            },
+            body: JSON.stringify(formData)
+          });
+        } catch (proxyError) {
+          console.error('Both direct and proxy requests failed:', { directError, proxyError });
+          throw new Error('Unable to submit form. Please try again later or contact support.');
+        }
+      }
 
       if (!response.ok) {
         throw new Error('Failed to submit form data');
