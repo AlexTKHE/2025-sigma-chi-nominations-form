@@ -8,7 +8,11 @@ const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:5173', 'https://2025-sigma-chi-nominations-form.vercel.app'],
+  origin: [
+    'http://localhost:5173', 
+    'https://2025-sigma-chi-nominations-form.vercel.app',
+    'https://2025-sigma-chi-nominations-form-kg1.vercel.app'
+  ],
   credentials: true
 }));
 app.use(express.json({ limit: '10mb' })); // For signature data
