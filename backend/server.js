@@ -41,6 +41,20 @@ async function saveNominations(data) {
 }
 
 // Routes
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'Sigma Chi Nominations Backend API',
+    status: 'running',
+    endpoints: {
+      health: '/api/health',
+      submit: '/api/submit-nominations',
+      nominations: '/api/nominations',
+      summary: '/api/summary'
+    },
+    timestamp: new Date().toISOString()
+  });
+});
+
 app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'API is running',
