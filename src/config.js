@@ -5,7 +5,7 @@ export const config = {
   // Backend API URL
   // Use localhost for development, your deployed backend URL for production
   apiUrl: process.env.NODE_ENV === 'production' 
-    ? 'https://your-backend-url.vercel.app' // Replace with your actual backend URL
+    ? 'https://2025-sigma-chi-nominations-form.vercel.app' // Your actual backend URL
     : 'http://localhost:3001',
   
   // Form settings
