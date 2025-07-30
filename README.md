@@ -1,5 +1,7 @@
 # Sigma Chi Officer Nomination Form
 
+Visit it here: https://2025-sigma-chi-nominations-form-kg1.vercel.app
+
 A React-based web application for collecting officer nominations from Sigma Chi fraternity members. The form automatically saves responses to a Google Sheet using Google Apps Script.
 
 ## Features
