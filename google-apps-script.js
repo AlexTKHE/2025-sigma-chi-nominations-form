@@ -5,7 +5,7 @@ function doPost(e) {
     const formData = JSON.parse(e.postData.contents);
     const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
     processNominations(spreadsheet, formData);
-
+    
     return ContentService
       .createTextOutput(JSON.stringify({ success: true }))
       .setMimeType(ContentService.MimeType.JSON);
@@ -39,19 +39,19 @@ function doOptions(e) {
 function processNominations(spreadsheet, formData) {
   const submitterName = formData.submitterName || 'Anonymous';
   const timestamp = new Date().toISOString();
-
+  
   let mainSheet = spreadsheet.getSheetByName('Nominations Summary');
   if (!mainSheet) {
     mainSheet = spreadsheet.insertSheet('Nominations Summary');
     setupMainSheet(mainSheet);
   }
-
+  
   let detailsSheet = spreadsheet.getSheetByName('Detailed Submissions');
   if (!detailsSheet) {
     detailsSheet = spreadsheet.insertSheet('Detailed Submissions');
     setupDetailsSheet(detailsSheet);
   }
-
+  
   addDetailedSubmission(detailsSheet, formData, timestamp);
   updateNominationCounts(mainSheet, formData);
 }
@@ -85,7 +85,7 @@ function addDetailedSubmission(sheet, formData, timestamp) {
   const submitterName = formData.submitterName || 'Anonymous';
   const submittedAt = formData.submittedAt || timestamp;
   const signature = formData.signature || '';
-
+  
   if (formData.nominations) {
     Object.keys(formData.nominations).forEach(position => {
       const nominations = formData.nominations[position];
@@ -110,12 +110,12 @@ function addDetailedSubmission(sheet, formData, timestamp) {
 function updateNominationCounts(sheet, formData) {
   const data = sheet.getDataRange().getValues();
   const existing = {};
-
+  
   for (let i = 1; i < data.length; i++) {
     const [position, nominee, count] = data[i];
     if (!existing[position]) existing[position] = {};
     existing[position][nominee] = parseInt(count) || 0;
-  }
+    }
 
   if (formData.nominations) {
     Object.keys(formData.nominations).forEach(position => {
@@ -124,22 +124,22 @@ function updateNominationCounts(sheet, formData) {
         if (nom.name && nom.name.trim()) {
           const name = nom.name.trim();
           existing[position][name] = (existing[position][name] || 0) + 1;
-        }
-      });
+          }
+        });
     });
   }
-
+  
   if (data.length > 1) {
     sheet.getRange(2, 1, data.length - 1, 3).clear();
   }
-
+  
   const newData = [];
   Object.keys(existing).sort().forEach(position => {
     Object.keys(existing[position]).sort().forEach(nominee => {
       newData.push([position, nominee, existing[position][nominee]]);
     });
   });
-
+  
   if (newData.length > 0) {
     sheet.getRange(2, 1, newData.length, 3).setValues(newData);
     for (let i = 0; i < newData.length; i++) {

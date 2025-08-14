@@ -174,13 +174,13 @@
                 if (method === 'direct') {
                     // Direct POST - will likely fail due to CORS
                     response = await fetch(url, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        mode: 'cors',
-                        body: JSON.stringify(testData)
-                    });
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    mode: 'cors',
+                    body: JSON.stringify(testData)
+                });
                 } else if (method === 'proxy') {
                     // Use CORS proxy
                     const proxyUrl = `https://cors-anywhere.herokuapp.com/${url}`;

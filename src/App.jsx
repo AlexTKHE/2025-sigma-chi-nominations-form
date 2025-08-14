@@ -3,7 +3,6 @@ import {
   Container,
   Paper,
   Typography,
-  Autocomplete,
   TextField,
   Button,
   Box,
@@ -16,13 +15,18 @@ import {
   AccordionDetails,
   ThemeProvider,
   createTheme,
-  CircularProgress
+  CircularProgress,
+  Radio,
+  RadioGroup,
+  FormControlLabel,
+  FormControl
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SignatureCanvas from 'react-signature-canvas';
 import sigmaChiLogo from './assets/sigmaChiLogo.png';
 import { getApiUrl, validateConfig } from './config';
 import './App.css';
+import { Link } from 'react-router-dom';
 
 // Sigma Chi color theme
 const sigmaChiTheme = createTheme({
@@ -45,95 +49,76 @@ const sigmaChiTheme = createTheme({
   },
 });
 
-// Sample list of names for the autocomplete
-const sampleNames = [
-  'Oliver Andrews',
-  'Cole Beeman',
-  'Connor Carpenter',
-  'Nicholas (Nic) Corbo',
-  'Adam Crowley',
-  'Luke Dempsey',
-  'CJ Eftekhari',
-  'Tyler Evans',
-  'Dashiell (Dash) Franklin',
-  'Hershel Griffin',
-  'Max Hahn',
-  'Alexander (Xander) Harrison',
-  'Eliot Kirschner',
-  'Jace Kellet',
-  'Ben Kurland',
-  'Cooper Kyro',
-  'Evan Lara',
-  'Seamus Lubamerskey',
-  'Adam Lorek',
-  'Noah Malamut',
-  'Alexander (Alex) Miller',
-  'Jaiden Miranda',
-  'Joey Murphy',
-  'Colin Murphy',
-  'John Nicholson',
-  'James Peluso',
-  'Taran Royyuru',
-  'Logan Simpson',
-  'Arlo Sirota',
-  'Ethan Smothers',
-  'Griffin Soelberg',
-  'Deklan Shwartz',
-  'Alexander (Alex) Thompson',
-  'Nicholas (Nick) Tomlinson',
-  'Lev Tumaykin',
-  'Zachary (Zak) Vuncanon',
-  'Grady Ward',
-  'Joshua (Josh) Aruya',
-  'Charlie (Charles) Lapetina',
-  'Ashton Saint',
-  'Ethan Saint'
-];
+// 50-word mock description (exactly 50 words)
+const FIFTY_WORD_REASON = 'Demonstrates reliable judgment, steady communication, and respect for brothers; plans thoughtfully, follows through on commitments, and supports teammates under pressure. Leads with humility, invites feedback, and builds consensus without losing momentum. Organized, ethical, and prepared, they prioritize chapter standards, safety, and inclusion while inspiring participation, accountability, and measurable results consistently.';
 
-// Officer positions
-const officerPositions = [
-  'Consul',
-  'Pro-Consul', 
-  'Annotator',
-  'Magister',
-  'Quaestor',
-  'Tribune',
-  'Kustos',
-  'Risk-Manager',
-  'Philanthropy Chair'
-];
+// Mock candidates with short reasons per position (fictional names only)
+const mockCandidates = {
+  'Consul': [
+    { name: 'Jordan Rivers', reason: FIFTY_WORD_REASON },
+    { name: 'Morgan Lee', reason: FIFTY_WORD_REASON },
+    { name: 'Casey Bennett', reason: FIFTY_WORD_REASON }
+  ],
+  'Pro-Consul': [
+    { name: 'Riley Thompson', reason: FIFTY_WORD_REASON },
+    { name: 'Taylor Brooks', reason: FIFTY_WORD_REASON },
+    { name: 'Avery Collins', reason: FIFTY_WORD_REASON }
+  ],
+  'Annotator': [
+    { name: 'Quinn Parker', reason: FIFTY_WORD_REASON },
+    { name: 'Skylar Hayes', reason: FIFTY_WORD_REASON },
+    { name: 'Drew Morgan', reason: FIFTY_WORD_REASON }
+  ],
+  'Magister': [
+    { name: 'Rowan Mitchell', reason: FIFTY_WORD_REASON },
+    { name: 'Peyton Carter', reason: FIFTY_WORD_REASON },
+    { name: 'Jamie West', reason: FIFTY_WORD_REASON }
+  ],
+  'Quaestor': [
+    { name: 'Cameron Blake', reason: FIFTY_WORD_REASON },
+    { name: 'Reese Sullivan', reason: FIFTY_WORD_REASON },
+    { name: 'Dakota Price', reason: FIFTY_WORD_REASON }
+  ],
+  'Tribune': [
+    { name: 'Kai Emerson', reason: FIFTY_WORD_REASON },
+    { name: 'Sage Turner', reason: FIFTY_WORD_REASON },
+    { name: 'Remy Lawson', reason: FIFTY_WORD_REASON }
+  ],
+  'Kustos': [
+    { name: 'Alexis Monroe', reason: FIFTY_WORD_REASON },
+    { name: 'Shawn Barrett', reason: FIFTY_WORD_REASON },
+    { name: 'Emerson Quinn', reason: FIFTY_WORD_REASON }
+  ],
+  'Risk-Manager': [
+    { name: 'Hayden Clarke', reason: FIFTY_WORD_REASON },
+    { name: 'Phoenix Walker', reason: FIFTY_WORD_REASON },
+    { name: 'River Dalton', reason: FIFTY_WORD_REASON }
+  ],
+  'Philanthropy Chair': [
+    { name: 'Sydney Harper', reason: FIFTY_WORD_REASON },
+    { name: 'Marley Grant', reason: FIFTY_WORD_REASON },
+    { name: 'Taylor Reeves', reason: FIFTY_WORD_REASON }
+  ]
+};
+
+// Officer positions derived from mock candidates
+const officerPositions = Object.keys(mockCandidates);
 
 function App() {
-  const [nominations, setNominations] = useState({});
+  const [votes, setVotes] = useState({});
   const signaturePad = useRef(null);
   const [submittedData, setSubmittedData] = useState(null);
   const [showThankYou, setShowThankYou] = useState(false);
-  const [expanded, setExpanded] = useState(null); // Track which accordion is expanded
+  // Removed single-accordion expansion tracking
   const [submitterName, setSubmitterName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [hasValidSignature, setHasValidSignature] = useState(false);
 
-  const handleAddNomination = (position) => {
-    setNominations(prev => ({
+  const handleVoteChange = (position, selectedName) => {
+    setVotes(prev => ({
       ...prev,
-      [position]: [...(prev[position] || []), { id: Date.now(), name: '' }]
-    }));
-  };
-
-  const handleNominationChange = (position, id, value) => {
-    setNominations(prev => ({
-      ...prev,
-      [position]: prev[position].map(nom => 
-        nom.id === id ? { ...nom, name: value || '' } : nom
-      )
-    }));
-  };
-
-  const handleRemoveNomination = (position, id) => {
-    setNominations(prev => ({
-      ...prev,
-      [position]: prev[position].filter(nom => nom.id !== id)
+      [position]: selectedName
     }));
   };
 
@@ -143,15 +128,18 @@ function App() {
     
     try {
       const signatureData = signaturePad.current ? signaturePad.current.toDataURL() : null;
+      const nominationsFromVotes = Object.keys(votes).reduce((acc, position) => {
+        const selectedName = (votes[position] || '').trim();
+        if (selectedName) {
+          const candidate = (mockCandidates[position] || []).find(c => c.name === selectedName);
+          acc[position] = [{ name: selectedName, reason: candidate?.reason || '' }];
+        }
+        return acc;
+      }, {});
+
       const formData = {
         submitterName,
-        nominations: Object.keys(nominations).reduce((acc, position) => {
-          const positionNominations = nominations[position]?.filter(nom => (nom.name || '').trim() !== '') || [];
-          if (positionNominations.length > 0) {
-            acc[position] = positionNominations;
-          }
-          return acc;
-        }, {}),
+        nominations: nominationsFromVotes,
         signature: signatureData,
         submittedAt: new Date().toISOString()
       };
@@ -194,9 +182,7 @@ function App() {
   };
 
   const getTotalNominations = () => {
-    return Object.values(nominations).reduce((total, positionNoms) => 
-      total + (positionNoms?.filter(nom => (nom.name || '').trim() !== '').length || 0), 0
-    );
+    return Object.values(votes).filter(v => (v || '').trim() !== '').length;
   };
 
   // Helper to check if signature is present
@@ -221,17 +207,6 @@ function App() {
     }
   };
 
-  // When a section is expanded, add a nomination if none exist
-  const handleAccordionChange = (position) => (event, isExpanded) => {
-    setExpanded(isExpanded ? position : null);
-    if (isExpanded && (!nominations[position] || nominations[position].length === 0)) {
-      setNominations(prev => ({
-        ...prev,
-        [position]: [{ id: Date.now(), name: '' }]
-      }));
-    }
-  };
-
   // Check signature periodically to update state
   useEffect(() => {
     const interval = setInterval(() => {
@@ -253,7 +228,7 @@ function App() {
               Thank You!
             </Typography>
             <Typography variant="h5" sx={{ color: '#0033A0', fontWeight: 600, mb: 2 }}>
-              Your nominations have been submitted.
+              Your votes have been submitted.
             </Typography>
             <Typography variant="body1" sx={{ color: '#0033A0', mb: 4 }}>
               In Hoc Signo Vinces<br/>
@@ -266,11 +241,12 @@ function App() {
               <img src={sigmaChiLogo} alt="Sigma Chi Logo" style={{ width: 100, marginBottom: 16 }} />
             </Box>
             <Typography variant="h3" component="h1" gutterBottom sx={{ color: '#FFD100', fontWeight: 700, textShadow: '2px 2px 0 #0033A0, 4px 4px 8px #0033A055' }}>
-              Sigma Chi Officer Nominations
+              Sigma Chi Officer Voting
             </Typography>
             <Typography variant="body1" sx={{ mb: 4, color: '#FFD100', fontWeight: 500, textShadow: '1px 1px 0 #0033A0' }}>
-              Please select individuals you would like to nominate for each officer position
+              Please vote for one candidate for each officer position
             </Typography>
+            <Button component={Link} to="/results" variant="outlined" sx={{ mb: 2 }}>View Results</Button>
 
             {/* Officer Position Sections */}
             <Box sx={{ mb: 4 }}>
@@ -278,72 +254,43 @@ function App() {
                 <Accordion
                   key={position}
                   sx={{ mb: 2 }}
-                  expanded={expanded === position}
-                  onChange={handleAccordionChange(position)}
+                  defaultExpanded
                 >
                   <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                     <Typography variant="h6" sx={{ flexGrow: 1, textAlign: 'left', color: '#0033A0', textShadow: '1px 1px 0 #FFD100' }}>
                       {position}
                     </Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ mr: 2 }}>
-                      {nominations[position]?.filter(nom => (nom.name || '').trim() !== '').length || 0} nomination(s)
+                      Selected: {votes[position] ? votes[position] : 'None'}
                     </Typography>
                   </AccordionSummary>
                   <AccordionDetails>
                     <Box sx={{ textAlign: 'left' }}>
-                      {(!nominations[position] || nominations[position].length === 0) && (
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                          Click "Add Nomination" to nominate someone for {position}
-                        </Typography>
-                      )}
-                      
-                      {nominations[position]?.map((nomination, index) => (
-                        <Box key={nomination.id} sx={{ mb: 2 }}>
-                          <Autocomplete
-                            options={sampleNames}
-                            value={nomination.name}
-                            onChange={(event, newValue) => handleNominationChange(position, nomination.id, newValue)}
-                            renderInput={(params) => (
-                              <TextField
-                                {...params}
-                                label={`${position} Nomination ${index + 1}`}
-                                placeholder="Search for a person to nominate..."
-                                fullWidth
-                                InputProps={{
-                                  ...params.InputProps,
-                                  className: (params.InputProps.className ? params.InputProps.className + ' ' : '') + 'gradient-text',
-                                }}
+                      <FormControl component="fieldset" sx={{ width: '100%' }}>
+                        <RadioGroup
+                          value={votes[position] || ''}
+                          onChange={(e) => handleVoteChange(position, e.target.value)}
+                        >
+                          {(mockCandidates[position] || []).map((candidate) => (
+                            <Box key={candidate.name} sx={{ mb: 2, p: 2, border: '1px solid #FFD100', borderRadius: 1, backgroundColor: '#fff' }}>
+                              <FormControlLabel
+                                value={candidate.name}
+                                control={<Radio />}
+                                label={
+                                  <Box>
+                                    <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#0033A0' }}>
+                                      {candidate.name}
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ color: '#0033A0' }}>
+                                      {candidate.reason}
+                                    </Typography>
+                                  </Box>
+                                }
                               />
-                            )}
-                            renderOption={(props, option) => (
-                              <li {...props}>
-                                <span style={{ color: '#0033A0', fontWeight: 500 }}>{option}</span>
-                              </li>
-                            )}
-                          />
-                          {nominations[position].length > 1 && (
-                            <Button
-                              variant="outlined"
-                              color="error"
-                              size="small"
-                              onClick={() => handleRemoveNomination(position, nomination.id)}
-                              sx={{ mt: 1 }}
-                            >
-                              Remove
-                            </Button>
-                          )}
-                        </Box>
-                      ))}
-                      
-                      <Button
-                        variant="outlined"
-                        onClick={() => handleAddNomination(position)}
-                        sx={{ mt: 2 }}
-                      >
-                        {(!nominations[position] || nominations[position].length === 0) 
-                          ? `Add ${position} Nomination` 
-                          : `Add Another ${position} Nomination`}
-                      </Button>
+                            </Box>
+                          ))}
+                        </RadioGroup>
+                      </FormControl>
                     </Box>
                   </AccordionDetails>
                 </Accordion>
@@ -358,7 +305,7 @@ function App() {
                 Summary
               </Typography>
               <Typography variant="body2" sx={{ color: '#0033A0', textShadow: 'none' }}>
-                Total Nominations: {getTotalNominations()}
+                Total Votes: {getTotalNominations()}
               </Typography>
             </Box>
 
@@ -380,7 +327,7 @@ function App() {
             {/* Signature Box */}
             <Box sx={{ mb: 4 }}>
               <Typography variant="h6" gutterBottom sx={{ color: '#0033A0', textShadow: 'none' }}>
-                Please sign to confirm your nominations
+                Please sign to confirm your votes
               </Typography>
               <Box sx={{ 
                 border: '2px solid #FFD100', 
@@ -424,7 +371,7 @@ function App() {
             {/* Submit Requirements Note */}
             <Box sx={{ mb: 1 }}>
               <Typography variant="body2" sx={{ color: '#0033A0', fontWeight: 500 }}>
-                <strong>To submit:</strong> Enter your name, at least one nomination for any officer position,<br />
+                <strong>To submit:</strong> Enter your name, at least one vote for any officer position,<br />
                 <strong>and</strong> provide your signature below.
               </Typography>
             </Box>
@@ -449,7 +396,7 @@ function App() {
                 opacity: getTotalNominations() === 0 || !hasSignature() || !submitterName.trim() || isSubmitting ? 0.5 : 1,
               }}
             >
-              {isSubmitting ? <CircularProgress size={24} color="inherit" /> : 'Submit Nominations'}
+              {isSubmitting ? <CircularProgress size={24} color="inherit" /> : 'Submit Votes'}
             </Button>
 
             {/* Submitted Data Display */}

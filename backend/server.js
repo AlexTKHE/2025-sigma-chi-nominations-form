@@ -135,16 +135,22 @@ app.post('/api/submit-nominations', async (req, res) => {
     
     existingData.nominations.push(submission);
     
-    // Update summary
+    // Update summary with counts and reasons
     const summary = {};
     existingData.nominations.forEach(sub => {
-      Object.keys(sub.nominations).forEach(position => {
+      Object.keys(sub.nominations || {}).forEach(position => {
         if (!summary[position]) summary[position] = {};
-        
-        sub.nominations[position].forEach(nom => {
-          if (nom.name && nom.name.trim()) {
+        (sub.nominations[position] || []).forEach(nom => {
+          if (nom && nom.name && nom.name.trim()) {
             const name = nom.name.trim();
-            summary[position][name] = (summary[position][name] || 0) + 1;
+            const reason = (nom.reason || '').trim();
+            if (!summary[position][name]) {
+              summary[position][name] = { count: 0, reason };
+            }
+            summary[position][name].count += 1;
+            if (!summary[position][name].reason && reason) {
+              summary[position][name].reason = reason;
+            }
           }
         });
       });
@@ -204,6 +210,83 @@ app.get('/api/summary', async (req, res) => {
     res.status(500).json({ 
       success: false, 
       error: 'Failed to load summary' 
+    });
+  }
+});
+
+// Delete a specific nomination submission
+app.delete('/api/nominations/:id', async (req, res) => {
+  try {
+    const submissionId = req.params.id;
+    console.log('Attempting to delete submission:', submissionId);
+    
+    // Load existing data
+    const existingData = await loadNominations();
+    
+    // Find and remove the submission
+    const initialLength = existingData.nominations.length;
+    existingData.nominations = existingData.nominations.filter(
+      submission => submission.id !== submissionId
+    );
+    
+    if (existingData.nominations.length === initialLength) {
+      return res.status(404).json({
+        success: false,
+        error: 'Submission not found',
+        submissionId
+      });
+    }
+    
+    // Recalculate summary after deletion (counts and reasons)
+    const summary = {};
+    existingData.nominations.forEach(sub => {
+      Object.keys(sub.nominations || {}).forEach(position => {
+        if (!summary[position]) summary[position] = {};
+        (sub.nominations[position] || []).forEach(nom => {
+          if (nom && nom.name && nom.name.trim()) {
+            const name = nom.name.trim();
+            const reason = (nom.reason || '').trim();
+            if (!summary[position][name]) {
+              summary[position][name] = { count: 0, reason };
+            }
+            summary[position][name].count += 1;
+            if (!summary[position][name].reason && reason) {
+              summary[position][name].reason = reason;
+            }
+          }
+        });
+      });
+    });
+    
+    existingData.summary = summary;
+    
+    // Save updated data
+    const saveResult = await saveNominations(existingData);
+    
+    if (saveResult) {
+      console.log('✅ Submission deleted successfully:', submissionId);
+      res.json({
+        success: true,
+        message: 'Submission deleted successfully',
+        deletedId: submissionId,
+        remainingSubmissions: existingData.nominations.length
+      });
+    } else {
+      console.log('⚠️ Deletion saved locally but failed to save to GitHub');
+      res.json({
+        success: true,
+        message: 'Submission deleted successfully (local storage only)',
+        deletedId: submissionId,
+        warning: 'Data not saved to GitHub Gist'
+      });
+    }
+    
+  } catch (error) {
+    console.error('Error deleting submission:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete submission',
+      details: error.message
     });
   }
 });

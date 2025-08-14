@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sigma Chi Nominations - Admin Tool</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .header {
+            background: linear-gradient(135deg, #0033A0, #FFD100);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .api-url {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+        .button {
+            background-color: #0033A0;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .button:hover {
+            background-color: #002266;
+        }
+        .button.danger {
+            background-color: #dc3545;
+        }
+        .button.danger:hover {
+            background-color: #c82333;
+        }
+        .submission {
+            border: 1px solid #ddd;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .submission-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .submission-id {
+            font-weight: bold;
+            color: #0033A0;
+        }
+        .submission-time {
+            color: #666;
+            font-size: 0.9em;
+        }
+        .submitter-name {
+            font-weight: bold;
+            color: #333;
+        }
+        .nominations-list {
+            margin: 10px 0;
+        }
+        .position {
+            margin: 5px 0;
+            padding: 5px;
+            background-color: #e9ecef;
+            border-radius: 3px;
+        }
+        .nominee {
+            margin-left: 20px;
+            color: #495057;
+        }
+        .loading {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+        }
+        .error {
+            color: #dc3545;
+            background-color: #f8d7da;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .success {
+            color: #155724;
+            background-color: #d4edda;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .summary-section {
+            background-color: #e7f3ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .summary-title {
+            font-weight: bold;
+            color: #0033A0;
+            margin-bottom: 10px;
+        }
+        .position-summary {
+            margin: 10px 0;
+        }
+        .nominee-count {
+            margin-left: 20px;
+            color: #495057;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏛️ Sigma Chi Nominations - Admin Tool</h1>
+        <p>View and manage nomination submissions</p>
+    </div>
+
+    <div class="container">
+        <div>
+            <label for="apiUrl">Backend API URL:</label>
+            <input type="url" id="apiUrl" class="api-url" 
+                   value="https://2025-sigma-chi-nominations-form.vercel.app" 
+                   placeholder="Enter your backend API URL">
+        </div>
+
+        <div>
+            <button class="button" onclick="loadNominations()">📊 Load Nominations</button>
+            <button class="button" onclick="loadSummary()">📈 Load Summary</button>
+            <button class="button" onclick="testConnection()">🔗 Test Connection</button>
+        </div>
+
+        <div id="status"></div>
+        <div id="content"></div>
+    </div>
+
+    <script>
+        async function testConnection() {
+            const apiUrl = document.getElementById('apiUrl').value;
+            const statusDiv = document.getElementById('status');
+            
+            statusDiv.innerHTML = '<div class="loading">Testing connection...</div>';
+            
+            try {
+                const response = await fetch(`${apiUrl}/api/health`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    statusDiv.innerHTML = `<div class="success">✅ Connection successful! API is running.</div>`;
+                } else {
+                    statusDiv.innerHTML = `<div class="error">❌ Connection failed: ${response.status}</div>`;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="error">❌ Connection failed: ${error.message}</div>`;
+            }
+        }
+
+        async function loadNominations() {
+            const apiUrl = document.getElementById('apiUrl').value;
+            const statusDiv = document.getElementById('status');
+            const contentDiv = document.getElementById('content');
+            
+            statusDiv.innerHTML = '<div class="loading">Loading nominations...</div>';
+            contentDiv.innerHTML = '';
+            
+            try {
+                const response = await fetch(`${apiUrl}/api/nominations`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    statusDiv.innerHTML = `<div class="success">✅ Loaded ${data.nominations.length} submissions</div>`;
+                    displayNominations(data.nominations);
+                } else {
+                    statusDiv.innerHTML = `<div class="error">❌ Failed to load nominations: ${data.error}</div>`;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="error">❌ Error loading nominations: ${error.message}</div>`;
+            }
+        }
+
+        async function loadSummary() {
+            const apiUrl = document.getElementById('apiUrl').value;
+            const statusDiv = document.getElementById('status');
+            const contentDiv = document.getElementById('content');
+            
+            statusDiv.innerHTML = '<div class="loading">Loading summary...</div>';
+            contentDiv.innerHTML = '';
+            
+            try {
+                const response = await fetch(`${apiUrl}/api/summary`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    statusDiv.innerHTML = `<div class="success">✅ Summary loaded successfully</div>`;
+                    displaySummary(data.summary);
+                } else {
+                    statusDiv.innerHTML = `<div class="error">❌ Failed to load summary: ${data.error}</div>`;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="error">❌ Error loading summary: ${error.message}</div>`;
+            }
+        }
+
+        function displayNominations(nominations) {
+            const contentDiv = document.getElementById('content');
+            
+            if (nominations.length === 0) {
+                contentDiv.innerHTML = '<div class="loading">No submissions found.</div>';
+                return;
+            }
+
+            let html = '<h2>📝 All Submissions</h2>';
+            
+            nominations.forEach(submission => {
+                html += `
+                    <div class="submission">
+                        <div class="submission-header">
+                            <div>
+                                <span class="submission-id">ID: ${submission.id}</span>
+                                <span class="submission-time">${new Date(submission.timestamp).toLocaleString()}</span>
+                            </div>
+                            <button class="button danger" onclick="deleteSubmission('${submission.id}')">🗑️ Delete</button>
+                        </div>
+                        <div class="submitter-name">Submitted by: ${submission.submitterName}</div>
+                        <div class="nominations-list">
+                `;
+                
+                Object.keys(submission.nominations).forEach(position => {
+                    html += `<div class="position">${position}:</div>`;
+                    submission.nominations[position].forEach(nom => {
+                        html += `<div class="nominee">• ${nom.name}</div>`;
+                    });
+                });
+                
+                html += `
+                        </div>
+                    </div>
+                `;
+            });
+            
+            contentDiv.innerHTML = html;
+        }
+
+        function displaySummary(summary) {
+            const contentDiv = document.getElementById('content');
+            
+            let html = '<div class="summary-section">';
+            html += '<div class="summary-title">📊 Nomination Summary</div>';
+            
+            Object.keys(summary).forEach(position => {
+                html += `<div class="position-summary">${position}:</div>`;
+                Object.keys(summary[position]).forEach(nominee => {
+                    const count = summary[position][nominee];
+                    html += `<div class="nominee-count">• ${nominee}: ${count} nomination${count > 1 ? 's' : ''}</div>`;
+                });
+            });
+            
+            html += '</div>';
+            contentDiv.innerHTML = html;
+        }
+
+        async function deleteSubmission(submissionId) {
+            if (!confirm(`Are you sure you want to delete submission ${submissionId}?`)) {
+                return;
+            }
+            
+            const apiUrl = document.getElementById('apiUrl').value;
+            const statusDiv = document.getElementById('status');
+            
+            statusDiv.innerHTML = '<div class="loading">Deleting submission...</div>';
+            
+            try {
+                const response = await fetch(`${apiUrl}/api/nominations/${submissionId}`, {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    statusDiv.innerHTML = `<div class="success">✅ Submission deleted successfully! Remaining: ${data.remainingSubmissions}</div>`;
+                    // Reload the nominations to update the display
+                    setTimeout(() => loadNominations(), 1000);
+                } else {
+                    statusDiv.innerHTML = `<div class="error">❌ Failed to delete submission: ${data.error}</div>`;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="error">❌ Error deleting submission: ${error.message}</div>`;
+            }
+        }
+
+        // Auto-test connection on page load
+        window.onload = function() {
+            setTimeout(testConnection, 500);
+        };
+    </script>
+</body>
+</html> 
