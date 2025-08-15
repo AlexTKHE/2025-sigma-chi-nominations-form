@@ -186,8 +186,7 @@ app.post('/api/submit-nominations', async (req, res) => {
       res.json({ 
         success: true, 
         message: 'Nominations submitted successfully',
-        submissionId: submission.id,
-        debug: 'Data saved to GitHub Gist successfully'
+        submissionId: submission.id
       });
     } else {
       console.log('⚠️ Submission saved locally but failed to save to GitHub');
@@ -195,9 +194,7 @@ app.post('/api/submit-nominations', async (req, res) => {
         success: true, 
         message: 'Nominations submitted successfully (local storage only)',
         submissionId: submission.id,
-        warning: 'Data not saved to GitHub Gist',
-        debug: 'GitHub save failed - check server logs',
-        githubError: 'Check Vercel function logs for detailed GitHub API response'
+        warning: 'Data not saved to GitHub Gist'
       });
     }
     
@@ -405,36 +402,6 @@ app.get('/api/admin-summary', async (req, res) => {
   }
 });
 
-// Test endpoint to save dummy data to GitHub
-app.get('/api/test-save', async (req, res) => {
-  try {
-    const testData = {
-      nominations: [{
-        id: "test123",
-        submitterName: "Test User",
-        timestamp: new Date().toISOString(),
-        nominations: { "Consul": [{ name: "Test Candidate", reason: "Test reason" }] },
-        signature: "test_signature",
-        submittedAt: new Date().toISOString()
-      }],
-      summary: { "Consul": { "Test Candidate": { count: 1, reason: "Test reason" } } }
-    };
-    
-    const saveResult = await saveNominations(testData);
-    
-    res.json({
-      success: saveResult,
-      message: saveResult ? 'Test save successful' : 'Test save failed',
-      testData: testData
-    });
-  } catch (error) {
-    res.json({
-      success: false,
-      error: error.message,
-      message: 'Test save crashed'
-    });
-  }
-});
 
 // Test endpoint to check GitHub token
 app.get('/api/test-github', async (req, res) => {
