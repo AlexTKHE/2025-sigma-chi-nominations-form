@@ -196,7 +196,8 @@ app.post('/api/submit-nominations', async (req, res) => {
         message: 'Nominations submitted successfully (local storage only)',
         submissionId: submission.id,
         warning: 'Data not saved to GitHub Gist',
-        debug: 'GitHub save failed - check server logs'
+        debug: 'GitHub save failed - check server logs',
+        githubError: 'Check Vercel function logs for detailed GitHub API response'
       });
     }
     
@@ -400,6 +401,37 @@ app.get('/api/admin-summary', async (req, res) => {
     res.status(500).json({ 
       success: false, 
       error: 'Failed to load admin summary' 
+    });
+  }
+});
+
+// Test endpoint to save dummy data to GitHub
+app.get('/api/test-save', async (req, res) => {
+  try {
+    const testData = {
+      nominations: [{
+        id: "test123",
+        submitterName: "Test User",
+        timestamp: new Date().toISOString(),
+        nominations: { "Consul": [{ name: "Test Candidate", reason: "Test reason" }] },
+        signature: "test_signature",
+        submittedAt: new Date().toISOString()
+      }],
+      summary: { "Consul": { "Test Candidate": { count: 1, reason: "Test reason" } } }
+    };
+    
+    const saveResult = await saveNominations(testData);
+    
+    res.json({
+      success: saveResult,
+      message: saveResult ? 'Test save successful' : 'Test save failed',
+      testData: testData
+    });
+  } catch (error) {
+    res.json({
+      success: false,
+      error: error.message,
+      message: 'Test save crashed'
     });
   }
 });
