@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs').promises;
@@ -185,7 +186,8 @@ app.post('/api/submit-nominations', async (req, res) => {
       res.json({ 
         success: true, 
         message: 'Nominations submitted successfully',
-        submissionId: submission.id
+        submissionId: submission.id,
+        debug: 'Data saved to GitHub Gist successfully'
       });
     } else {
       console.log('⚠️ Submission saved locally but failed to save to GitHub');
@@ -193,7 +195,8 @@ app.post('/api/submit-nominations', async (req, res) => {
         success: true, 
         message: 'Nominations submitted successfully (local storage only)',
         submissionId: submission.id,
-        warning: 'Data not saved to GitHub Gist'
+        warning: 'Data not saved to GitHub Gist',
+        debug: 'GitHub save failed - check server logs'
       });
     }
     
