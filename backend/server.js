@@ -403,6 +403,51 @@ app.get('/api/admin-summary', async (req, res) => {
 });
 
 
+// Clear all nominations (admin use only)
+app.post('/api/clear-all', async (req, res) => {
+  try {
+    const adminPassword = req.body.password;
+    
+    // Simple password protection
+    if (adminPassword !== 'zetakappa') {
+      return res.status(401).json({
+        success: false,
+        error: 'Unauthorized - incorrect password'
+      });
+    }
+    
+    // Clear data structure
+    const emptyData = {
+      nominations: [],
+      summary: {}
+    };
+    
+    const saveResult = await saveNominations(emptyData);
+    
+    if (saveResult) {
+      console.log('✅ All nominations cleared successfully');
+      res.json({
+        success: true,
+        message: 'All nominations cleared successfully',
+        clearedAt: new Date().toISOString()
+      });
+    } else {
+      console.log('❌ Failed to clear nominations');
+      res.status(500).json({
+        success: false,
+        error: 'Failed to clear nominations from GitHub Gist'
+      });
+    }
+  } catch (error) {
+    console.error('Error clearing nominations:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to clear nominations',
+      details: error.message
+    });
+  }
+});
+
 // Test endpoint to check GitHub token
 app.get('/api/test-github', async (req, res) => {
   try {
