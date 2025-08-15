@@ -123,6 +123,25 @@ app.post('/api/submit-nominations', async (req, res) => {
     // Load existing data
     const existingData = await loadNominations();
     
+    // Check if this submitter has already voted
+    const submitterName = (formData.submitterName || '').trim();
+    if (submitterName) {
+      const existingSubmission = existingData.nominations.find(
+        submission => submission.submitterName && 
+        submission.submitterName.toLowerCase() === submitterName.toLowerCase()
+      );
+      
+      if (existingSubmission) {
+        console.log('❌ Duplicate submission attempt from:', submitterName);
+        return res.status(409).json({ 
+          success: false, 
+          error: `${submitterName} has already submitted their vote. Each member can only vote once.`,
+          existingSubmissionId: existingSubmission.id,
+          existingSubmissionDate: existingSubmission.submittedAt
+        });
+      }
+    }
+    
     // Add new submission
     const submission = {
       id: Date.now().toString(),
@@ -287,6 +306,97 @@ app.delete('/api/nominations/:id', async (req, res) => {
       success: false,
       error: 'Failed to delete submission',
       details: error.message
+    });
+  }
+});
+
+// Get detailed voting records (for admin)
+app.get('/api/voting-records', async (req, res) => {
+  try {
+    const data = await loadNominations();
+    
+    // Format detailed records
+    const records = data.nominations.map(submission => ({
+      id: submission.id,
+      submitterName: submission.submitterName,
+      timestamp: submission.timestamp,
+      submittedAt: submission.submittedAt,
+      votes: Object.keys(submission.nominations || {}).reduce((acc, position) => {
+        const nominations = submission.nominations[position] || [];
+        if (nominations.length > 0 && nominations[0].name) {
+          acc[position] = nominations[0].name;
+        }
+        return acc;
+      }, {})
+    }));
+    
+    res.json({ 
+      success: true,
+      records,
+      totalSubmissions: records.length
+    });
+  } catch (error) {
+    console.error('Error loading voting records:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to load voting records' 
+    });
+  }
+});
+
+// Get comprehensive summary (all candidates, including 0 votes)
+app.get('/api/admin-summary', async (req, res) => {
+  try {
+    const data = await loadNominations();
+    
+    // Define all possible candidates (real nominations)
+    const allCandidates = {
+      'Consul': ['Max Hahn', 'Connor Carpenter', 'Xander Harrison'],
+      'Pro-Consul': ['Alex Thompson', 'Cooper Kyro'],
+      'Annotator': ['Cooper Kyro', 'Alex Miller'],
+      'Magister': ['Nic Corbo', 'Lev Tumaykin', 'Cole Beeman'],
+      'Assistant Magister': ['Max Hahn', 'Alex Thompson', 'Cole Beeman', 'Lev Tumaykin', 'Oliver Andrews', 'Alex Miller'],
+      'Quaestor': ['Lev Tumaykin', 'Nic Corbo', 'Cooper Kyro'],
+      'Tribune': ['Cole Beeman', 'Ben Kurland', 'Connor Carpenter'],
+      'Kustos': ['Xander Harrison', 'Lev Tumaykin'],
+      'Risk-Manager': ['Evan Lara', 'Ben Kurland'],
+      'Philanthropy Chair': ['Cole Beeman', 'Ethan Smothers', 'Alex Thompson', 'Cooper Kyro']
+    };
+    
+    // Create comprehensive summary with all candidates
+    const comprehensiveSummary = {};
+    
+    Object.keys(allCandidates).forEach(position => {
+      comprehensiveSummary[position] = {};
+      
+      // Initialize all candidates with 0 votes
+      allCandidates[position].forEach(candidateName => {
+        comprehensiveSummary[position][candidateName] = {
+          count: 0,
+          reason: ''
+        };
+      });
+      
+      // Add actual votes from data
+      if (data.summary && data.summary[position]) {
+        Object.keys(data.summary[position]).forEach(candidateName => {
+          if (comprehensiveSummary[position][candidateName]) {
+            comprehensiveSummary[position][candidateName] = data.summary[position][candidateName];
+          }
+        });
+      }
+    });
+    
+    res.json({ 
+      success: true,
+      summary: comprehensiveSummary,
+      totalSubmissions: data.nominations.length
+    });
+  } catch (error) {
+    console.error('Error loading admin summary:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to load admin summary' 
     });
   }
 });
